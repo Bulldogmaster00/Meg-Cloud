@@ -234,7 +234,6 @@
         // CONFIGURAÇÕES - ATUALIZE COM SEUS DADOS
         const API_BASE_URL = 'http://192.168.68.108:5000'; // Substitua pelo IP do seu Raspberry Pi
         const CORRECT_PASSWORD = '956523332'; // Senha de acesso
-        const MAX_FILE_SIZE_MB = 50; // Tamanho máximo de arquivo em MB
 
         // Lista de arquivos/diretórios ocultos
         const hiddenFiles = [
@@ -401,12 +400,7 @@
                     utils.showMessage('Selecione um arquivo antes de enviar.', 'error');
                     return;
                 }
-
-                if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                    utils.showMessage(`Arquivo muito grande. Tamanho máximo: ${MAX_FILE_SIZE_MB}MB`, 'error');
-                    return;
-                }
-
+            
                 utils.setLoading(elements.uploadButton, true);
                 
                 const formData = new FormData();
