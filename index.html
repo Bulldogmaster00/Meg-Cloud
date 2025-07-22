@@ -231,307 +231,60 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES - ATUALIZE COM SEUS DADOS
-        const API_BASE_URL = 'http://192.168.68.108:5000'; // Substitua pelo IP do seu Raspberry Pi
-        const CORRECT_PASSWORD = '956523332'; // Senha de acesso
-
-        // Lista de arquivos/diretórios ocultos
-        const hiddenFiles = [
-            'venv_megcloud',
-            '.git',
-            '__pycache__',
-            'app.py',
-            'app.py.save',
-            'Pendrive'
-            'UPLOAD_FOLDER'
-        ];
-
-        // Elementos DOM
-        const elements = {
-            loginForm: document.getElementById('loginForm'),
-            passwordInput: document.getElementById('passwordInput'),
-            loginButton: document.getElementById('loginButton'),
-            loginError: document.getElementById('loginError'),
-            mainContent: document.getElementById('mainContent'),
-            fileInput: document.getElementById('fileInput'),
-            uploadButton: document.getElementById('uploadButton'),
-            fileList: document.getElementById('fileList'),
-            messageBox: document.getElementById('messageBox')
-        };
-
-        // Estado da aplicação
-        const state = {
-            isAuthenticated: localStorage.getItem('isAuthenticated') === 'true'
-        };
-
-        // Funções utilitárias
-        const utils = {
-            showMessage: (message, type = 'success') => {
-                elements.messageBox.textContent = message;
-                elements.messageBox.className = 'message-box';
-                elements.messageBox.classList.add(type === 'error' ? 'error' : 'success');
-                elements.messageBox.style.display = 'block';
-                elements.messageBox.style.opacity = 1;
-                
-                setTimeout(() => {
-                    elements.messageBox.style.opacity = 0;
-                    setTimeout(() => {
-                        elements.messageBox.style.display = 'none';
-                    }, 300);
-                }, 3000);
-            },
-            
-            shakeElement: (element) => {
-                element.classList.add('shake');
-                setTimeout(() => {
-                    element.classList.remove('shake');
-                }, 500);
-            },
-            
-            formatBytes: (bytes, decimals = 2) => {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const dm = decimals < 0 ? 0 : decimals;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-            },
-            
-            setLoading: (button, isLoading) => {
-                if (isLoading) {
-                    button.innerHTML = `${button.textContent} <span class="loading"></span>`;
-                    button.disabled = true;
-                } else {
-                    button.innerHTML = button.textContent;
-                    button.disabled = false;
-                }
-            }
-        };
-
-        // Funções de autenticação
-const auth = {
-    // Login com tratamento completo de erros
-    handleLogin: async () => {
-        const enteredPassword = elements.passwordInput.value.trim();
-        
-        // Validação básica
-        if (!enteredPassword) {
-            utils.showMessage("Digite a senha para continuar", "error");
-            elements.passwordInput.focus();
-            return;
-        }
-
-        // Mostra loading no botão
-        utils.setLoading(elements.loginButton, true);
-        
-        try {
-            // Verificação no servidor (mais seguro que apenas no frontend)
-            const response = await fetch(`${API_BASE_URL}/verify-auth`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ password: enteredPassword })
-            });
-
-            if (!response.ok) throw new Error("Senha incorreta");
-            
-            // Autenticação bem-sucedida
-            state.isAuthenticated = true;
-            localStorage.setItem('authToken', Date.now()); // Token simples
-            
-            elements.loginForm.style.display = 'none';
-            elements.mainContent.style.display = 'flex';
-            files.fetchFiles();
-            
-        } catch (error) {
-            console.error("Erro no login:", error);
-            elements.loginError.textContent = error.message || "Erro durante o login";
-            elements.loginError.style.display = 'block';
-            utils.shakeElement(elements.loginForm);
-        } finally {
-            utils.setLoading(elements.loginButton, false);
-            elements.passwordInput.value = '';
-        }
-    },
-
-    // Verificação melhorada
-    checkAuth: () => {
-        const authToken = localStorage.getItem('authToken');
-        
-        // Token válido por 12 horas (43200000 ms)
-        const isValid = authToken && (Date.now() - parseInt(authToken)) < 43200000;
-        
-        if (isValid) {
-            state.isAuthenticated = true;
-            elements.loginForm.style.display = 'none';
-            elements.mainContent.style.display = 'flex';
-            files.fetchFiles();
-        } else {
-            this.logout(); // Força logout se token inválido
-        }
-    },
-
-    // Logout completo
-    logout: () => {
-        state.isAuthenticated = false;
-        localStorage.removeItem('authToken');
-        elements.loginForm.style.display = 'flex';
-        elements.mainContent.style.display = 'none';
-        elements.passwordInput.focus();
+       // VERSÃO SIMPLIFICADA E TESTADA - SEM LOCALSTORAGE, SEM COMPLICAÇÕES
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos
+    const passwordInput = document.getElementById('passwordInput');
+    const loginButton = document.getElementById('loginButton');
+    const loginError = document.getElementById('loginError');
+    const loginForm = document.getElementById('loginForm');
+    const mainContent = document.getElementById('mainContent');
+    
+    // Senha fixa (substitua pela sua)
+    const CORRECT_PASSWORD = '956523332';
+    
+    // Função para mostrar/ocultar elementos
+    function toggleViews(showLogin) {
+        loginForm.style.display = showLogin ? 'flex' : 'none';
+        mainContent.style.display = showLogin ? 'none' : 'flex';
     }
-};
+    
+    // Tentativa de login
+    loginButton.addEventListener('click', function() {
+        const enteredPassword = passwordInput.value.trim();
         
-        // Funções de manipulação de arquivos
-        const files = {
-            fetchFiles: async () => {
-                elements.fileList.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/files`);
-                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-                    const files = await response.json();
-
-                    if (files.length === 0) {
-                        elements.fileList.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
-                        return;
-                    }
-
-                    elements.fileList.innerHTML = '';
-                    files.forEach(file => {
-                        if (!hiddenFiles.includes(file)) {
-                            const fileItem = document.createElement('div');
-                            fileItem.className = 'file-item';
-                            fileItem.innerHTML = `
-                                <span class="file-name">${file}</span>
-                                <div class="file-actions">
-                                    <button class="download-btn" data-filename="${file}">Download</button>
-                                    <button class="delete-btn" data-filename="${file}">Excluir</button>
-                                </div>
-                            `;
-                            elements.fileList.appendChild(fileItem);
-                        }
-                    });
-
-                    // Adiciona event listeners
-                    document.querySelectorAll('.download-btn').forEach(btn => {
-                        btn.addEventListener('click', () => files.downloadFile(btn.dataset.filename));
-                    });
-                    document.querySelectorAll('.delete-btn').forEach(btn => {
-                        btn.addEventListener('click', () => files.deleteFile(btn.dataset.filename));
-                    });
-
-                } catch (error) {
-                    console.error('Erro ao carregar arquivos:', error);
-                    elements.fileList.innerHTML = `
-                        <p class="text-red-500 text-center">
-                            Erro ao carregar arquivos. Verifique se o servidor está rodando.
-                        </p>
-                    `;
-                    utils.showMessage(`Erro ao carregar arquivos: ${error.message}`, 'error');
-                }
-            },
+        if (enteredPassword === CORRECT_PASSWORD) {
+            // Login bem-sucedido
+            toggleViews(false);
+            alert('Login realizado com sucesso!'); // Remova depois de testar
+        } else {
+            // Login falhou
+            loginError.style.display = 'block';
+            passwordInput.value = '';
+            passwordInput.focus();
             
-            uploadFile: async () => {
-                const file = elements.fileInput.files[0];
-                if (!file) {
-                    utils.showMessage('Selecione um arquivo antes de enviar.', 'error');
-                    return;
-                }
-            
-                utils.setLoading(elements.uploadButton, true);
-                
-                const formData = new FormData();
-                formData.append('file', file);
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/upload`, {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(errorText || `Erro HTTP: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    utils.showMessage(result.message || 'Arquivo enviado com sucesso!');
-                    elements.fileInput.value = '';
-                    files.fetchFiles();
-                } catch (error) {
-                    console.error('Erro no upload:', error);
-                    utils.showMessage(`Erro no upload: ${error.message}`, 'error');
-                } finally {
-                    utils.setLoading(elements.uploadButton, false);
-                }
-            },
-            
-            downloadFile: async (filename) => {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/download/${filename}`);
-                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    a.remove();
-                    
-                    utils.showMessage(`Download de "${filename}" iniciado.`);
-                } catch (error) {
-                    console.error('Erro no download:', error);
-                    utils.showMessage(`Erro no download: ${error.message}`, 'error');
-                }
-            },
-            
-            deleteFile: async (filename) => {
-                if (!confirm(`Tem certeza que deseja excluir "${filename}" permanentemente?`)) return;
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/delete/${filename}`, {
-                        method: 'DELETE'
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(errorText || `Erro HTTP: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    utils.showMessage(result.message || 'Arquivo excluído com sucesso.');
-                    files.fetchFiles();
-                } catch (error) {
-                    console.error('Erro ao excluir:', error);
-                    utils.showMessage(`Erro ao excluir: ${error.message}`, 'error');
-                }
-            }
-        };
-
-        // Event Listeners
-        elements.loginButton.addEventListener('click', auth.handleLogin);
-        elements.passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') auth.handleLogin();
-        });
-        elements.uploadButton.addEventListener('click', files.uploadFile);
-
-        // Adiciona botão de logout (opcional)
-        document.addEventListener('DOMContentLoaded', () => {
-            auth.checkAuth();
-            
-            // Adiciona botão de logout se autenticado
-            if (state.isAuthenticated) {
-                const logoutBtn = document.createElement('button');
-                logoutBtn.textContent = 'Sair';
-                logoutBtn.className = 'logout-btn absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded';
-                logoutBtn.addEventListener('click', auth.logout);
-                document.body.appendChild(logoutBtn);
-            }
-        });
+            // Efeito visual de erro
+            loginForm.style.animation = 'shake 0.5s';
+            setTimeout(() => {
+                loginForm.style.animation = '';
+            }, 500);
+        }
+    });
+    
+    // Mostra apenas o formulário de login inicialmente
+    toggleViews(true);
+    
+    // Animação de shake (adiciona ao CSS se não tiver)
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+    `;
+    document.head.appendChild(style);
+});
     </script>
 </body>
 </html>
