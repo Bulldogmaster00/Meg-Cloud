@@ -147,38 +147,52 @@
         <div class="file-list-section">
             <h2 class="section-title">Meus Arquivos</h2>
             <div id="fileList" class="space-y-3">
-                <p class="text-gray-500 text-center" id="loadingMessage">Carregando arquivos...</p>
+                <p class="text-gray-500 text-center">Carregando arquivos...</p>
             </div>
         </div>
+
+        <div id="messageBox" class="message-box"></div>
     </div>
 
-    <div id="messageBox" class="message-box"></div>
-
     <script>
-        // ATENÇÃO: Substitua esta URL pelo endereço IP ou nome de host do seu Raspberry Pi
-        // e a porta onde seu servidor Flask estará rodando.
-        // Exemplo: http://192.168.1.100:5000
-        const API_BASE_URL = 'http://192.168.68.108:5000'; // Altere para o IP do seu Pi e porta do Flask
+        // ATENÇÃO: SUBSTITUA ESTE IP PELO IP DO SEU RASPBERRY PI
+        // Se estiver a usar o Vercel, este IP deve ser o IP PÚBLICO do seu Pi,
+        // e o seu router deve ter o Port Forwarding configurado para a porta 5000.
+        const API_BASE_URL = 'http://<SEU_IP_DO_RASPBERRY_PI>:5000'; // Exemplo: 'http://192.168.1.100:5000'
+
+        // Lista de arquivos a serem excluídos da exibição
+        const hiddenFiles = [
+            'venv_megcloud',
+            '.git',
+            'UPLOAD_FOLDER', // Se UPLOAD_FOLDER for um diretório e você não quiser vê-lo
+            'app.py',
+            '__pycache__',
+            'app.py.save',
+            'Pendrive' // Se 'Pendrive' for um arquivo/diretório que aparece na listagem
+        ];
 
         const fileInput = document.getElementById('fileInput');
         const uploadButton = document.getElementById('uploadButton');
         const fileListDiv = document.getElementById('fileList');
         const messageBox = document.getElementById('messageBox');
-        const loadingMessage = document.getElementById('loadingMessage');
 
         // Função para exibir mensagens ao usuário
         function showMessage(message, type = 'success') {
             messageBox.textContent = message;
-            messageBox.className = `message-box show bg-${type === 'success' ? 'green' : 'red'}-500`;
+            if (type === 'success') {
+                messageBox.style.backgroundColor = '#4CAF50'; // Verde
+            } else if (type === 'error') {
+                messageBox.style.backgroundColor = '#e74c3c'; // Vermelho
+            }
+            messageBox.classList.add('show');
             setTimeout(() => {
                 messageBox.classList.remove('show');
-            }, 3000);
+            }, 3000); // Mensagem desaparece após 3 segundos
         }
 
-        // Função para listar arquivos
-        async function listFiles() {
-            loadingMessage.style.display = 'block'; // Mostra a mensagem de carregamento
-            fileListDiv.innerHTML = ''; // Limpa a lista antes de carregar
+        // Função para buscar e exibir a lista de arquivos
+        async function fetchFiles() {
+            fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
             try {
                 const response = await fetch(`${API_BASE_URL}/files`);
                 if (!response.ok) {
@@ -186,10 +200,16 @@
                 }
                 const files = await response.json();
 
+                fileListDiv.innerHTML = ''; // Limpa a lista existente
+
                 if (files.length === 0) {
                     fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
-                } else {
-                    files.forEach(file => {
+                    return;
+                }
+
+                files.forEach(file => {
+                    // Verifica se o arquivo está na lista de arquivos ocultos
+                    if (!hiddenFiles.includes(file)) {
                         const fileItem = document.createElement('div');
                         fileItem.className = 'file-item';
                         fileItem.innerHTML = `
@@ -200,43 +220,21 @@
                             </div>
                         `;
                         fileListDiv.appendChild(fileItem);
-                    });
+                    }
+                });
 
-                    // Adiciona listeners para os botões de download e exclusão
-                    document.querySelectorAll('.download-btn').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const filename = e.target.dataset.filename;
-                            window.location.href = `${API_BASE_URL}/download/${filename}`;
-                        });
-                    });
+                // Adiciona event listeners para os botões de download e exclusão
+                document.querySelectorAll('.download-btn').forEach(button => {
+                    button.addEventListener('click', (e) => downloadFile(e.target.dataset.filename));
+                });
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteFile(e.target.dataset.filename));
+                });
 
-                    document.querySelectorAll('.delete-btn').forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            const filename = e.target.dataset.filename;
-                            if (confirm(`Tem certeza que deseja excluir "${filename}"?`)) { // Usando confirm para simplicidade, mas um modal customizado é melhor
-                                try {
-                                    const response = await fetch(`${API_BASE_URL}/delete/${filename}`, {
-                                        method: 'DELETE'
-                                    });
-                                    if (!response.ok) {
-                                        throw new Error(`Erro HTTP: ${response.status}`);
-                                    }
-                                    const result = await response.json();
-                                    showMessage(result.message);
-                                    listFiles(); // Atualiza a lista após a exclusão
-                                } catch (error) {
-                                    console.error('Erro ao excluir arquivo:', error);
-                                    showMessage(`Erro ao excluir arquivo: ${error.message}`, 'error');
-                                }
-                            }
-                        });
-                    });
-                }
             } catch (error) {
-                console.error('Erro ao listar arquivos:', error);
-                fileListDiv.innerHTML = `<p class="text-red-500 text-center">Erro ao carregar arquivos: ${error.message}. Verifique se o servidor está rodando no Raspberry Pi.</p>`;
-            } finally {
-                loadingMessage.style.display = 'none'; // Esconde a mensagem de carregamento
+                console.error('Erro ao carregar arquivos:', error);
+                fileListDiv.innerHTML = `<p class="text-red-500 text-center">Erro ao carregar arquivos: ${error.message}. Verifique se o servidor está rodando no Raspberry Pi e o API_BASE_URL está correto.</p>`;
+                showMessage(`Erro ao carregar arquivos: ${error.message}`, 'error');
             }
         }
 
@@ -258,21 +256,74 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Erro HTTP: ${response.status}`);
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
                 }
 
                 const result = await response.json();
                 showMessage(result.message);
                 fileInput.value = ''; // Limpa o input do arquivo
-                listFiles(); // Atualiza a lista após o upload
+                fetchFiles(); // Atualiza a lista de arquivos
             } catch (error) {
                 console.error('Erro ao fazer upload:', error);
                 showMessage(`Erro ao fazer upload: ${error.message}`, 'error');
             }
         });
 
+        // Função para baixar arquivo
+        async function downloadFile(filename) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/download/${filename}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                // Cria um URL para o blob e simula um clique para download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename; // Define o nome do arquivo para download
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url); // Libera o URL do objeto
+                showMessage(`Download de "${filename}" iniciado.`);
+            } catch (error) {
+                console.error('Erro ao baixar arquivo:', error);
+                showMessage(`Erro ao baixar arquivo: ${error.message}`, 'error');
+            }
+        }
+
+        // Função para excluir arquivo
+        async function deleteFile(filename) {
+            if (!confirm(`Tem certeza que deseja excluir "${filename}"?`)) {
+                return; // Usuário cancelou
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/delete/${filename}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message, 'success');
+                fetchFiles(); // Atualiza a lista de arquivos
+            } catch (error) {
+                console.error('Erro ao excluir arquivo:', error);
+                showMessage(`Erro ao excluir arquivo: ${error.message}`, 'error');
+            }
+        }
+
         // Carrega os arquivos quando a página é carregada
-        window.onload = listFiles;
+        document.addEventListener('DOMContentLoaded', fetchFiles);
     </script>
 </body>
 </html>
+
