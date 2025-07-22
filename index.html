@@ -309,21 +309,19 @@
         };
 
         // Funções de autenticação
-        const auth = {
-            handleLogin: () => {
-                const enteredPassword = elements.passwordInput.value.trim();
-                
-                if (enteredPassword === CORRECT_PASSWORD) {
-                    state.isAuthenticated = true;
-                    localStorage.setItem('isAuthenticated', 'true');
-                    elements.loginForm.style.display = 'none';
-                    elements.mainContent.style.display = 'flex';
-                    files.fetchFiles();
-                } else {
-                    elements.loginError.style.display = 'block';
-                    elements.passwordInput.value = '';
-                    utils.shakeElement(elements.loginForm);
-                }
+     const auth = {
+    // ... outras funções
+    
+    checkAuth: () => {
+        // Limpa o localStorage antes de verificar (adicionado esta linha)
+        localStorage.removeItem('isAuthenticated');
+        
+        // Restante da função original
+        if (state.isAuthenticated) {
+            elements.loginForm.style.display = 'none';
+            elements.mainContent.style.display = 'flex';
+            files.fetchFiles();
+        }
             },
             
             checkAuth: () => {
