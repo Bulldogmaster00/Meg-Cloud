@@ -195,6 +195,24 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .progress-container {
+            width: 100%;
+            background-color: #e0e7eb;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #3498db;
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.3s ease;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+        }
     </style>
 </head>
 <body>
@@ -214,8 +232,11 @@
         <div class="upload-section">
             <h2 class="section-title">Fazer Upload de Arquivo</h2>
             <div class="input-group">
-                <input type="file" id="fileInput" class="rounded-md border border-gray-300 p-2">
+                <input type="file" id="fileInput" class="rounded-md border border-gray-300 p-2" multiple>
                 <button id="uploadButton" class="upload-btn">Upload</button>
+            </div>
+            <div id="progressContainer" class="progress-container">
+                <div id="progressBar" class="progress-bar">0%</div>
             </div>
         </div>
 
@@ -230,62 +251,174 @@
     </div>
 
     <script>
-       // VERSÃO SIMPLIFICADA E TESTADA - SEM LOCALSTORAGE, SEM COMPLICAÇÕES
-document.addEventListener('DOMContentLoaded', function() {
-    // Elementos
-    const passwordInput = document.getElementById('passwordInput');
-    const loginButton = document.getElementById('loginButton');
-    const loginError = document.getElementById('loginError');
-    const loginForm = document.getElementById('loginForm');
-    const mainContent = document.getElementById('mainContent');
-    
-    // Senha fixa (substitua pela sua)
-    const CORRECT_PASSWORD = '956523332';
-    
-    // Função para mostrar/ocultar elementos
-    function toggleViews(showLogin) {
-        loginForm.style.display = showLogin ? 'flex' : 'none';
-        mainContent.style.display = showLogin ? 'none' : 'flex';
-    }
-    
-    // Tentativa de login
-    loginButton.addEventListener('click', function() {
-        const enteredPassword = passwordInput.value.trim();
-        
-        if (enteredPassword === CORRECT_PASSWORD) {
-            // Login bem-sucedido
-            toggleViews(false);
-            alert('Login realizado com sucesso!'); // Remova depois de testar
-        } else {
-            // Login falhou
-            loginError.style.display = 'block';
-            passwordInput.value = '';
-            passwordInput.focus();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos
+            const passwordInput = document.getElementById('passwordInput');
+            const loginButton = document.getElementById('loginButton');
+            const loginError = document.getElementById('loginError');
+            const loginForm = document.getElementById('loginForm');
+            const mainContent = document.getElementById('mainContent');
+            const fileInput = document.getElementById('fileInput');
+            const uploadButton = document.getElementById('uploadButton');
+            const fileList = document.getElementById('fileList');
+            const messageBox = document.getElementById('messageBox');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
             
-            // Efeito visual de erro
-            loginForm.style.animation = 'shake 0.5s';
-            setTimeout(() => {
-                loginForm.style.animation = '';
-            }, 500);
-        }
-    });
-    
-    // Mostra apenas o formulário de login inicialmente
-    toggleViews(true);
-    
-    // Animação de shake (adiciona ao CSS se não tiver)
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-10px); }
-            40%, 80% { transform: translateX(10px); }
-        }
-    `;
-    document.head.appendChild(style);
-});
+            // Senha fixa
+            const CORRECT_PASSWORD = '956523332';
+            
+            // Função para mostrar mensagem
+            function showMessage(message, isError = false) {
+                messageBox.textContent = message;
+                messageBox.className = isError ? 'message-box error' : 'message-box';
+                messageBox.style.display = 'block';
+                messageBox.style.opacity = '1';
+                
+                setTimeout(() => {
+                    messageBox.style.opacity = '0';
+                    setTimeout(() => {
+                        messageBox.style.display = 'none';
+                    }, 300);
+                }, 3000);
+            }
+            
+            // Função para mostrar/ocultar elementos
+            function toggleViews(showLogin) {
+                loginForm.style.display = showLogin ? 'flex' : 'none';
+                mainContent.style.display = showLogin ? 'none' : 'flex';
+            }
+            
+            // Tentativa de login
+            loginButton.addEventListener('click', function() {
+                const enteredPassword = passwordInput.value.trim();
+                
+                if (enteredPassword === CORRECT_PASSWORD) {
+                    // Login bem-sucedido
+                    toggleViews(false);
+                    loadFileList();
+                } else {
+                    // Login falhou
+                    loginError.style.display = 'block';
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                    
+                    // Efeito visual de erro
+                    loginForm.classList.add('shake');
+                    setTimeout(() => {
+                        loginForm.classList.remove('shake');
+                    }, 500);
+                }
+            });
+            
+            // Carregar lista de arquivos (simulação)
+            function loadFileList() {
+                fileList.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
+                
+                // Simulando requisição ao servidor
+                setTimeout(() => {
+                    // Aqui você faria uma requisição AJAX para obter a lista de arquivos
+                    // Exemplo de resposta simulada:
+                    const files = [
+                        { name: 'documento.pdf', size: '2.4 MB' },
+                        { name: 'imagem.jpg', size: '1.2 MB' },
+                        { name: 'planilha.xlsx', size: '3.7 MB' }
+                    ];
+                    
+                    if (files.length === 0) {
+                        fileList.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
+                        return;
+                    }
+                    
+                    fileList.innerHTML = '';
+                    files.forEach(file => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.innerHTML = `
+                            <div class="file-name">${file.name} <span class="text-gray-500 text-sm">(${file.size})</span></div>
+                            <div class="file-actions">
+                                <button class="download-btn">Download</button>
+                                <button class="delete-btn">Excluir</button>
+                            </div>
+                        `;
+                        fileList.appendChild(fileItem);
+                    });
+                }, 1000);
+            }
+            
+            // Upload de arquivos
+            uploadButton.addEventListener('click', function() {
+                const files = fileInput.files;
+                
+                if (files.length === 0) {
+                    showMessage('Selecione pelo menos um arquivo para upload.', true);
+                    return;
+                }
+                
+                // Simulando upload (em um sistema real, você enviaria para o servidor)
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                
+                let progress = 0;
+                const totalFiles = files.length;
+                let uploadedFiles = 0;
+                
+                // Simulando progresso para cada arquivo
+                const interval = setInterval(() => {
+                    progress += 5;
+                    if (progress > 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                        
+                        // Atualizar lista após upload
+                        setTimeout(() => {
+                            progressContainer.style.display = 'none';
+                            loadFileList();
+                            showMessage(`${totalFiles} arquivo(s) enviado(s) com sucesso!`);
+                            fileInput.value = ''; // Limpa a seleção de arquivos
+                        }, 500);
+                    }
+                    
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${progress}%`;
+                }, 100);
+                
+                // Em um sistema real, você usaria FormData e XMLHttpRequest/Fetch:
+                /*
+                const formData = new FormData();
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files[]', files[i]);
+                }
+                
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+                
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = `${percentComplete}%`;
+                        progressBar.textContent = `${Math.round(percentComplete)}%`;
+                    }
+                };
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        showMessage('Upload concluído com sucesso!');
+                        loadFileList();
+                    } else {
+                        showMessage('Erro ao fazer upload.', true);
+                    }
+                    progressContainer.style.display = 'none';
+                };
+                
+                xhr.send(formData);
+                */
+            });
+            
+            // Mostra apenas o formulário de login inicialmente
+            toggleViews(true);
+        });
     </script>
-</body>
-</html>
 </body>
 </html>
