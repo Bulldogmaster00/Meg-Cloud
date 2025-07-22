@@ -128,10 +128,55 @@
             border: 1px solid #ccc;
             border-radius: 8px;
         }
+        /* Estilos para o formulário de login */
+        #loginForm {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        #loginForm input[type="password"] {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 250px;
+            text-align: center;
+        }
+        #loginForm button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        #loginForm button:hover {
+            background-color: #2980b9;
+        }
+        #loginError {
+            color: #e74c3c;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+        /* Esconde o conteúdo principal por padrão */
+        #mainContent {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div id="loginForm" class="container">
+        <h1 class="text-3xl font-bold text-gray-800">Meg Cloud - Acesso</h1>
+        <p class="text-gray-600">Por favor, insira a senha para continuar.</p>
+        <input type="password" id="passwordInput" placeholder="Senha">
+        <button id="loginButton">Entrar</button>
+        <p id="loginError" class="hidden">Senha incorreta. Tente novamente.</p>
+    </div>
+
+    <div id="mainContent" class="container">
         <div class="header">
             <h1>☁️ Meg Cloud</h1>
             <p class="text-gray-600">Armazene e acesse seus arquivos diretamente no seu Pi!</p>
@@ -159,7 +204,11 @@
         // ATENÇÃO: SUBSTITUA ESTE IP PELO IP DO SEU RASPBERRY PI
         // Se estiver a usar o Vercel, este IP deve ser o IP PÚBLICO do seu Pi,
         // e o seu router deve ter o Port Forwarding configurado para a porta 5000.
-        const API_BASE_URL = 'http://192.168.68.108:5000'; // Exemplo: 'http://192.168.1.100:5000'
+        const API_BASE_URL = 'http://<SEU_IP_DO_RASPBERRY_PI>:5000'; // Exemplo: 'http://192.168.1.100:5000'
+
+        // --- Configurações de Autenticação (SENHA HARDCODED - APENAS PARA TESTE/REDE LOCAL) ---
+        // Para segurança em produção, implemente autenticação no servidor (Flask) e use HTTPS.
+        const CORRECT_PASSWORD = 'suasenha'; // <-- Altere esta senha!
 
         // Lista de arquivos a serem excluídos da exibição
         const hiddenFiles = [
@@ -171,6 +220,12 @@
             'app.py.save',
             'Pendrive' // Se 'Pendrive' for um arquivo/diretório que aparece na listagem
         ];
+
+        const loginForm = document.getElementById('loginForm');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginButton = document.getElementById('loginButton');
+        const loginError = document.getElementById('loginError');
+        const mainContent = document.getElementById('mainContent');
 
         const fileInput = document.getElementById('fileInput');
         const uploadButton = document.getElementById('uploadButton');
@@ -190,6 +245,26 @@
                 messageBox.classList.remove('show');
             }, 3000); // Mensagem desaparece após 3 segundos
         }
+
+        // Função para verificar a senha
+        loginButton.addEventListener('click', () => {
+            const enteredPassword = passwordInput.value;
+            if (enteredPassword === CORRECT_PASSWORD) {
+                loginForm.style.display = 'none'; // Esconde o formulário de login
+                mainContent.style.display = 'flex'; // Mostra o conteúdo principal
+                fetchFiles(); // Carrega os arquivos após o login
+            } else {
+                loginError.classList.remove('hidden'); // Mostra a mensagem de erro
+                passwordInput.value = ''; // Limpa o campo da senha
+            }
+        });
+
+        // Permite pressionar Enter para logar
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginButton.click();
+            }
+        });
 
         // Função para buscar e exibir a lista de arquivos
         async function fetchFiles() {
@@ -322,11 +397,8 @@
             }
         }
 
-        // Carrega os arquivos quando a página é carregada
-        document.addEventListener('DOMContentLoaded', fetchFiles);
+        // Não carrega os arquivos automaticamente ao carregar a página; espera o login.
+        // document.addEventListener('DOMContentLoaded', fetchFiles);
     </script>
 </body>
 </html>
-
-</html>
-
