@@ -8,7 +8,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
+            background-color: #f0f4f8; /* Cor de fundo suave */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -51,43 +51,37 @@
             background-color: #f8fafd;
             border-radius: 8px;
             margin-bottom: 10px;
-            transition: all 0.2s ease;
+            transition: background-color 0.2s ease;
         }
         .file-item:hover {
             background-color: #eef2f6;
-            transform: translateY(-2px);
         }
         .file-name {
             font-weight: 500;
             color: #2c3e50;
             flex-grow: 1;
-            word-break: break-all;
-        }
-        .file-actions {
-            display: flex;
-            gap: 10px;
         }
         .file-actions button {
+            margin-left: 10px;
             padding: 8px 15px;
             border-radius: 8px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-            color: white;
+            transition: background-color 0.2s ease, transform 0.1s ease;
         }
         .file-actions button:hover {
             transform: translateY(-1px);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .download-btn {
             background-color: #3498db;
+            color: white;
         }
         .download-btn:hover {
             background-color: #2980b9;
         }
         .delete-btn {
             background-color: #e74c3c;
+            color: white;
         }
         .delete-btn:hover {
             background-color: #c0392b;
@@ -99,13 +93,11 @@
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
+            transition: background-color 0.2s ease, transform 0.1s ease;
         }
         .upload-btn:hover {
             background-color: #27ae60;
             transform: translateY(-1px);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .message-box {
             position: fixed;
@@ -119,10 +111,11 @@
             z-index: 1000;
             display: none;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease-in-out;
         }
-        .message-box.error {
-            background-color: #e74c3c;
+        .message-box.show {
+            display: block;
+            opacity: 1;
         }
         .input-group {
             display: flex;
@@ -135,6 +128,7 @@
             border: 1px solid #ccc;
             border-radius: 8px;
         }
+        /* Estilos para o formulário de login */
         #loginForm {
             display: flex;
             flex-direction: column;
@@ -144,74 +138,32 @@
             min-height: 100vh;
         }
         #loginForm input[type="password"] {
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             border: 1px solid #ccc;
             width: 250px;
             text-align: center;
-            font-size: 16px;
         }
         #loginForm button {
             background-color: #3498db;
             color: white;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
+            transition: background-color 0.2s ease;
         }
         #loginForm button:hover {
             background-color: #2980b9;
-            transform: translateY(-1px);
         }
         #loginError {
             color: #e74c3c;
             font-weight: 500;
             margin-top: 10px;
-            display: none;
         }
+        /* Esconde o conteúdo principal por padrão */
         #mainContent {
             display: none;
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); }
-            40%, 80% { transform: translateX(5px); }
-        }
-        .shake {
-            animation: shake 0.5s;
-        }
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 10px;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .progress-container {
-            width: 100%;
-            background-color: #e0e7eb;
-            border-radius: 8px;
-            margin-top: 10px;
-            display: none;
-        }
-        .progress-bar {
-            height: 20px;
-            background-color: #3498db;
-            border-radius: 8px;
-            width: 0%;
-            transition: width 0.3s ease;
-            text-align: center;
-            color: white;
-            font-size: 12px;
-            line-height: 20px;
         }
     </style>
 </head>
@@ -219,24 +171,22 @@
     <div id="loginForm" class="container">
         <h1 class="text-3xl font-bold text-gray-800">Meg Cloud - Acesso</h1>
         <p class="text-gray-600">Por favor, insira a senha para continuar.</p>
-        <input type="password" id="passwordInput" placeholder="Digite a senha">
+        <input type="password" id="passwordInput" placeholder="Senha">
         <button id="loginButton">Entrar</button>
-        <p id="loginError">Senha incorreta. Tente novamente.</p>
+        <p id="loginError" class="hidden">Senha incorreta. Tente novamente.</p>
     </div>
 
     <div id="mainContent" class="container">
         <div class="header">
             <h1>☁️ Meg Cloud</h1>
+            <p class="text-gray-600">Armazene e acesse seus arquivos diretamente no seu Pi!</p>
         </div>
 
         <div class="upload-section">
             <h2 class="section-title">Fazer Upload de Arquivo</h2>
             <div class="input-group">
-                <input type="file" id="fileInput" class="rounded-md border border-gray-300 p-2" multiple>
+                <input type="file" id="fileInput" class="rounded-md border border-gray-300 p-2">
                 <button id="uploadButton" class="upload-btn">Upload</button>
-            </div>
-            <div id="progressContainer" class="progress-container">
-                <div id="progressBar" class="progress-bar">0%</div>
             </div>
         </div>
 
@@ -251,236 +201,206 @@
     </div>
 
     <script>
-             document.addEventListener('DOMContentLoaded', function() {
-            // Elementos
-            const passwordInput = document.getElementById('passwordInput');
-            const loginButton = document.getElementById('loginButton');
-            const loginError = document.getElementById('loginError');
-            const loginForm = document.getElementById('loginForm');
-            const mainContent = document.getElementById('mainContent');
-            const fileInput = document.getElementById('fileInput');
-            const uploadButton = document.getElementById('uploadButton');
-            const fileList = document.getElementById('fileList');
-            const messageBox = document.getElementById('messageBox');
-            const progressContainer = document.getElementById('progressContainer');
-            const progressBar = document.getElementById('progressBar');
-            
-            // Configurações
-            const API_BASE_URL = 'http://' + window.location.hostname + ':5000'; // Ajuste conforme necessário
-            
-            // Função para mostrar mensagem
-            function showMessage(message, isError = false) {
-                messageBox.textContent = message;
-                messageBox.className = isError ? 'message-box error' : 'message-box';
-                messageBox.style.display = 'block';
-                messageBox.style.opacity = '1';
-                
-                setTimeout(() => {
-                    messageBox.style.opacity = '0';
-                    setTimeout(() => {
-                        messageBox.style.display = 'none';
-                    }, 300);
-                }, 3000);
+        // ATENÇÃO: SUBSTITUA ESTE IP PELO IP DO SEU RASPBERRY PI
+        // Se estiver a usar o Vercel, este IP deve ser o IP PÚBLICO do seu Pi,
+        // e o seu router deve ter o Port Forwarding configurado para a porta 5000.
+        const API_BASE_URL = 'http://192.168.68.108:5000'; // Exemplo: 'http://192.168.1.100:5000'
+
+        // --- Configurações de Autenticação (SENHA HARDCODED NO FRONT-END) ---
+        // ATENÇÃO: Esta senha está visível no código-fonte da página.
+        // NÃO USE para segurança real em produção ou se a página for acessível publicamente.
+        // É apenas para uso em rede local muito controlada ou para fins de teste.
+        const CORRECT_PASSWORD = '956523332'; // <-- Senha atualizada para 956523332
+
+        // Lista de arquivos a serem excluídos da exibição
+        const hiddenFiles = [
+            'venv_megcloud',
+            '.git',
+            'UPLOAD_FOLDER', // Se UPLOAD_FOLDER for um diretório e você não quiser vê-lo
+            'app.py',
+            '__pycache__',
+            'app.py.save',
+            'Pendrive' // Se 'Pendrive' for um arquivo/diretório que aparece na listagem
+        ];
+
+        const loginForm = document.getElementById('loginForm');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginButton = document.getElementById('loginButton');
+        const loginError = document.getElementById('loginError');
+        const mainContent = document.getElementById('mainContent');
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileListDiv = document.getElementById('fileList');
+        const messageBox = document.getElementById('messageBox');
+
+        // Função para exibir mensagens ao usuário
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            if (type === 'success') {
+                messageBox.style.backgroundColor = '#4CAF50'; // Verde
+            } else if (type === 'error') {
+                messageBox.style.backgroundColor = '#e74c3c'; // Vermelho
             }
-            
-            // Função para mostrar/ocultar elementos
-            function toggleViews(showLogin) {
-                loginForm.style.display = showLogin ? 'flex' : 'none';
-                mainContent.style.display = showLogin ? 'none' : 'flex';
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Mensagem desaparece após 3 segundos
+        }
+
+        // Função para verificar a senha (apenas no front-end)
+        loginButton.addEventListener('click', () => {
+            const enteredPassword = passwordInput.value;
+            if (enteredPassword === CORRECT_PASSWORD) {
+                loginForm.style.display = 'none'; // Esconde o formulário de login
+                mainContent.style.display = 'flex'; // Mostra o conteúdo principal
+                fetchFiles(); // Carrega os arquivos após o login
+            } else {
+                loginError.classList.remove('hidden'); // Mostra a mensagem de erro
+                passwordInput.value = ''; // Limpa o campo da senha
             }
-            
-            // Tentativa de login
-            loginButton.addEventListener('click', async function() {
-                const enteredPassword = passwordInput.value.trim();
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/login`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ password: enteredPassword })
-                    });
-                    
-                    if (response.ok) {
-                        // Login bem-sucedido
-                        toggleViews(false);
-                        loadFileList();
-                    } else {
-                        // Login falhou
-                        const data = await response.json();
-                        throw new Error(data.message || 'Erro no login');
-                    }
-                } catch (error) {
-                    console.error('Erro:', error);
-                    loginError.style.display = 'block';
-                    passwordInput.value = '';
-                    passwordInput.focus();
-                    
-                    // Efeito visual de erro
-                    loginForm.classList.add('shake');
-                    setTimeout(() => {
-                        loginForm.classList.remove('shake');
-                    }, 500);
+        });
+
+        // Permite pressionar Enter para logar
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginButton.click();
+            }
+        });
+
+        // Função para buscar e exibir a lista de arquivos
+        async function fetchFiles() {
+            fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
+            try {
+                const response = await fetch(`${API_BASE_URL}/files`);
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
                 }
-            });
-            
-            // Carregar lista de arquivos do Raspberry Pi
-            async function loadFileList() {
-                fileList.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/files`);
-                    
-                    if (!response.ok) {
-                        throw new Error('Erro ao carregar arquivos');
-                    }
-                    
-                    const filenames = await response.json();
-                    
-                    if (filenames.length === 0) {
-                        fileList.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
-                        return;
-                    }
-                    
-                    // Obter detalhes dos arquivos (tamanho)
-                    const files = await Promise.all(filenames.map(async filename => {
-                        const filepath = `${API_BASE_URL}/download/${filename}`;
-                        const sizeResponse = await fetch(filepath, { method: 'HEAD' });
-                        const size = sizeResponse.headers.get('content-length') || 0;
-                        return { name: filename, size: parseInt(size) };
-                    }));
-                    
-                    fileList.innerHTML = '';
-                    files.forEach(file => {
+                const files = await response.json();
+
+                fileListDiv.innerHTML = ''; // Limpa a lista existente
+
+                if (files.length === 0) {
+                    fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
+                    return;
+                }
+
+                files.forEach(file => {
+                    // Verifica se o arquivo está na lista de arquivos ocultos
+                    if (!hiddenFiles.includes(file)) {
                         const fileItem = document.createElement('div');
                         fileItem.className = 'file-item';
                         fileItem.innerHTML = `
-                            <div class="file-name">${file.name} <span class="text-gray-500 text-sm">(${formatFileSize(file.size)})</span></div>
+                            <span class="file-name">${file}</span>
                             <div class="file-actions">
-                                <button class="download-btn" data-filename="${file.name}">Download</button>
-                                <button class="delete-btn" data-filename="${file.name}">Excluir</button>
+                                <button class="download-btn" data-filename="${file}">Download</button>
+                                <button class="delete-btn" data-filename="${file}">Excluir</button>
                             </div>
                         `;
-                        fileList.appendChild(fileItem);
-                    });
-
-                    // Adiciona event listeners para os botões
-                    document.querySelectorAll('.download-btn').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            downloadFile(this.getAttribute('data-filename'));
-                        });
-                    });
-
-                    document.querySelectorAll('.delete-btn').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            deleteFile(this.getAttribute('data-filename'));
-                        });
-                    });
-
-                } catch (error) {
-                    console.error('Erro:', error);
-                    fileList.innerHTML = '<p class="text-red-500 text-center">Erro ao carregar lista de arquivos</p>';
-                    showMessage('Erro ao carregar arquivos: ' + error.message, true);
-                }
-            }
-            
-            // Função para formatar o tamanho do arquivo
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-            
-            // Função para baixar arquivo
-            async function downloadFile(filename) {
-                try {
-                    window.location.href = `${API_BASE_URL}/download/${encodeURIComponent(filename)}`;
-                    showMessage('Download iniciado!');
-                } catch (error) {
-                    console.error('Erro:', error);
-                    showMessage('Erro ao baixar arquivo: ' + error.message, true);
-                }
-            }
-            
-            // Função para deletar arquivo
-            async function deleteFile(filename) {
-                if (!confirm(`Tem certeza que deseja excluir "${filename}"?`)) {
-                    return;
-                }
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/delete/${encodeURIComponent(filename)}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Erro ao excluir arquivo');
+                        fileListDiv.appendChild(fileItem);
                     }
-                    
-                    showMessage('Arquivo excluído com sucesso!');
-                    loadFileList(); // Atualiza a lista
-                } catch (error) {
-                    console.error('Erro:', error);
-                    showMessage('Erro ao excluir arquivo: ' + error.message, true);
-                }
+                });
+
+                // Adiciona event listeners para os botões de download e exclusão
+                document.querySelectorAll('.download-btn').forEach(button => {
+                    button.addEventListener('click', (e) => downloadFile(e.target.dataset.filename));
+                });
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteFile(e.target.dataset.filename));
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar arquivos:', error);
+                fileListDiv.innerHTML = `<p class="text-red-500 text-center">Erro ao carregar arquivos: ${error.message}. Verifique se o servidor está rodando no Raspberry Pi e o API_BASE_URL está correto.</p>`;
+                showMessage(`Erro ao carregar arquivos: ${error.message}`, 'error');
             }
-            
-            // Upload de arquivos
-            uploadButton.addEventListener('click', async function() {
-                const files = fileInput.files;
-                
-                if (files.length === 0) {
-                    showMessage('Selecione pelo menos um arquivo para upload.', true);
-                    return;
+        }
+
+        // Função para fazer upload de arquivo
+        uploadButton.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage('Por favor, selecione um arquivo para upload.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
                 }
-                
-                progressContainer.style.display = 'block';
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-                
-                try {
-                    // Enviar cada arquivo individualmente
-                    let uploadedCount = 0;
-                    
-                    for (let i = 0; i < files.length; i++) {
-                        const file = files[i];
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        
-                        const response = await fetch(`${API_BASE_URL}/upload`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`Erro no upload do arquivo ${file.name}`);
-                        }
-                        
-                        uploadedCount++;
-                        const progress = Math.round((uploadedCount / files.length) * 100);
-                        progressBar.style.width = `${progress}%`;
-                        progressBar.textContent = `${progress}%`;
-                    }
-                    
-                    showMessage(`${uploadedCount} arquivo(s) enviado(s) com sucesso!`);
-                    fileInput.value = '';
-                    loadFileList();
-                } catch (error) {
-                    console.error('Erro:', error);
-                    showMessage('Erro ao fazer upload: ' + error.message, true);
-                } finally {
-                    setTimeout(() => {
-                        progressContainer.style.display = 'none';
-                    }, 1000);
-                }
-            });
-            
-            // Mostra apenas o formulário de login inicialmente
-            toggleViews(true);
+
+                const result = await response.json();
+                showMessage(result.message);
+                fileInput.value = ''; // Limpa o input do arquivo
+                fetchFiles(); // Atualiza a lista de arquivos
+            } catch (error) {
+                console.error('Erro ao fazer upload:', error);
+                showMessage(`Erro ao fazer upload: ${error.message}`, 'error');
+            }
         });
+
+        // Função para baixar arquivo
+        async function downloadFile(filename) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/download/${filename}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                // Cria um URL para o blob e simula um clique para download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename; // Define o nome do arquivo para download
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url); // Libera o URL do objeto
+                showMessage(`Download de "${filename}" iniciado.`);
+            } catch (error) {
+                console.error('Erro ao baixar arquivo:', error);
+                showMessage(`Erro ao baixar arquivo: ${error.message}`, 'error');
+            }
+        }
+
+        // Função para excluir arquivo
+        async function deleteFile(filename) {
+            if (!confirm(`Tem certeza que deseja excluir "${filename}"?`)) {
+                return; // Usuário cancelou
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/delete/${filename}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message, 'success');
+                fetchFiles(); // Atualiza a lista de arquivos
+            } catch (error) {
+                console.error('Erro ao excluir arquivo:', error);
+                showMessage(`Erro ao excluir arquivo: ${error.message}`, 'error');
+            }
+        }
+
+        // Não carrega os arquivos automaticamente ao carregar a página; espera o login.
+        // document.addEventListener('DOMContentLoaded', fetchFiles);
     </script>
 </body>
 </html>
