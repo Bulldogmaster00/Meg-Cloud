@@ -309,39 +309,79 @@
         };
 
         // Funções de autenticação
-     const auth = {
-    // ... outras funções
-    
-    checkAuth: () => {
-        // Limpa o localStorage antes de verificar (adicionado esta linha)
-        localStorage.removeItem('isAuthenticated');
+const auth = {
+    // Login com tratamento completo de erros
+    handleLogin: async () => {
+        const enteredPassword = elements.passwordInput.value.trim();
         
-        // Restante da função original
-        if (state.isAuthenticated) {
+        // Validação básica
+        if (!enteredPassword) {
+            utils.showMessage("Digite a senha para continuar", "error");
+            elements.passwordInput.focus();
+            return;
+        }
+
+        // Mostra loading no botão
+        utils.setLoading(elements.loginButton, true);
+        
+        try {
+            // Verificação no servidor (mais seguro que apenas no frontend)
+            const response = await fetch(`${API_BASE_URL}/verify-auth`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ password: enteredPassword })
+            });
+
+            if (!response.ok) throw new Error("Senha incorreta");
+            
+            // Autenticação bem-sucedida
+            state.isAuthenticated = true;
+            localStorage.setItem('authToken', Date.now()); // Token simples
+            
             elements.loginForm.style.display = 'none';
             elements.mainContent.style.display = 'flex';
             files.fetchFiles();
+            
+        } catch (error) {
+            console.error("Erro no login:", error);
+            elements.loginError.textContent = error.message || "Erro durante o login";
+            elements.loginError.style.display = 'block';
+            utils.shakeElement(elements.loginForm);
+        } finally {
+            utils.setLoading(elements.loginButton, false);
+            elements.passwordInput.value = '';
         }
-            },
-            
-            checkAuth: () => {
-                if (state.isAuthenticated) {
-                    elements.loginForm.style.display = 'none';
-                    elements.mainContent.style.display = 'flex';
-                    files.fetchFiles();
-                }
-            },
-            
-            logout: () => {
-                state.isAuthenticated = false;
-                localStorage.removeItem('isAuthenticated');
-                elements.loginForm.style.display = 'flex';
-                elements.mainContent.style.display = 'none';
-                elements.passwordInput.value = '';
-                elements.passwordInput.focus();
-            }
-        };
+    },
 
+    // Verificação melhorada
+    checkAuth: () => {
+        const authToken = localStorage.getItem('authToken');
+        
+        // Token válido por 12 horas (43200000 ms)
+        const isValid = authToken && (Date.now() - parseInt(authToken)) < 43200000;
+        
+        if (isValid) {
+            state.isAuthenticated = true;
+            elements.loginForm.style.display = 'none';
+            elements.mainContent.style.display = 'flex';
+            files.fetchFiles();
+        } else {
+            this.logout(); // Força logout se token inválido
+        }
+    },
+
+    // Logout completo
+    logout: () => {
+        state.isAuthenticated = false;
+        localStorage.removeItem('authToken');
+        elements.loginForm.style.display = 'flex';
+        elements.mainContent.style.display = 'none';
+        elements.passwordInput.focus();
+    }
+};
+        
         // Funções de manipulação de arquivos
         const files = {
             fetchFiles: async () => {
