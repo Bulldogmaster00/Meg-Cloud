@@ -251,7 +251,7 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+             document.addEventListener('DOMContentLoaded', function() {
             // Elementos
             const passwordInput = document.getElementById('passwordInput');
             const loginButton = document.getElementById('loginButton');
@@ -265,8 +265,8 @@
             const progressContainer = document.getElementById('progressContainer');
             const progressBar = document.getElementById('progressBar');
             
-            // Senha fixa
-            const CORRECT_PASSWORD = '956523332';
+            // Configurações
+            const API_BASE_URL = 'http://' + window.location.hostname + ':5000'; // Ajuste conforme necessário
             
             // Função para mostrar mensagem
             function showMessage(message, isError = false) {
@@ -290,15 +290,29 @@
             }
             
             // Tentativa de login
-            loginButton.addEventListener('click', function() {
+            loginButton.addEventListener('click', async function() {
                 const enteredPassword = passwordInput.value.trim();
                 
-                if (enteredPassword === CORRECT_PASSWORD) {
-                    // Login bem-sucedido
-                    toggleViews(false);
-                    loadFileList();
-                } else {
-                    // Login falhou
+                try {
+                    const response = await fetch(`${API_BASE_URL}/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ password: enteredPassword })
+                    });
+                    
+                    if (response.ok) {
+                        // Login bem-sucedido
+                        toggleViews(false);
+                        loadFileList();
+                    } else {
+                        // Login falhou
+                        const data = await response.json();
+                        throw new Error(data.message || 'Erro no login');
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
                     loginError.style.display = 'block';
                     passwordInput.value = '';
                     passwordInput.focus();
@@ -311,43 +325,111 @@
                 }
             });
             
-            // Carregar lista de arquivos (simulação)
-            function loadFileList() {
+            // Carregar lista de arquivos do Raspberry Pi
+            async function loadFileList() {
                 fileList.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
                 
-                // Simulando requisição ao servidor
-                setTimeout(() => {
-                    // Aqui você faria uma requisição AJAX para obter a lista de arquivos
-                    // Exemplo de resposta simulada:
-                    const files = [
-                        { name: 'documento.pdf', size: '2.4 MB' },
-                        { name: 'imagem.jpg', size: '1.2 MB' },
-                        { name: 'planilha.xlsx', size: '3.7 MB' }
-                    ];
+                try {
+                    const response = await fetch(`${API_BASE_URL}/files`);
                     
-                    if (files.length === 0) {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar arquivos');
+                    }
+                    
+                    const filenames = await response.json();
+                    
+                    if (filenames.length === 0) {
                         fileList.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
                         return;
                     }
+                    
+                    // Obter detalhes dos arquivos (tamanho)
+                    const files = await Promise.all(filenames.map(async filename => {
+                        const filepath = `${API_BASE_URL}/download/${filename}`;
+                        const sizeResponse = await fetch(filepath, { method: 'HEAD' });
+                        const size = sizeResponse.headers.get('content-length') || 0;
+                        return { name: filename, size: parseInt(size) };
+                    }));
                     
                     fileList.innerHTML = '';
                     files.forEach(file => {
                         const fileItem = document.createElement('div');
                         fileItem.className = 'file-item';
                         fileItem.innerHTML = `
-                            <div class="file-name">${file.name} <span class="text-gray-500 text-sm">(${file.size})</span></div>
+                            <div class="file-name">${file.name} <span class="text-gray-500 text-sm">(${formatFileSize(file.size)})</span></div>
                             <div class="file-actions">
-                                <button class="download-btn">Download</button>
-                                <button class="delete-btn">Excluir</button>
+                                <button class="download-btn" data-filename="${file.name}">Download</button>
+                                <button class="delete-btn" data-filename="${file.name}">Excluir</button>
                             </div>
                         `;
                         fileList.appendChild(fileItem);
                     });
-                }, 1000);
+
+                    // Adiciona event listeners para os botões
+                    document.querySelectorAll('.download-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            downloadFile(this.getAttribute('data-filename'));
+                        });
+                    });
+
+                    document.querySelectorAll('.delete-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            deleteFile(this.getAttribute('data-filename'));
+                        });
+                    });
+
+                } catch (error) {
+                    console.error('Erro:', error);
+                    fileList.innerHTML = '<p class="text-red-500 text-center">Erro ao carregar lista de arquivos</p>';
+                    showMessage('Erro ao carregar arquivos: ' + error.message, true);
+                }
+            }
+            
+            // Função para formatar o tamanho do arquivo
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Função para baixar arquivo
+            async function downloadFile(filename) {
+                try {
+                    window.location.href = `${API_BASE_URL}/download/${encodeURIComponent(filename)}`;
+                    showMessage('Download iniciado!');
+                } catch (error) {
+                    console.error('Erro:', error);
+                    showMessage('Erro ao baixar arquivo: ' + error.message, true);
+                }
+            }
+            
+            // Função para deletar arquivo
+            async function deleteFile(filename) {
+                if (!confirm(`Tem certeza que deseja excluir "${filename}"?`)) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/delete/${encodeURIComponent(filename)}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Erro ao excluir arquivo');
+                    }
+                    
+                    showMessage('Arquivo excluído com sucesso!');
+                    loadFileList(); // Atualiza a lista
+                } catch (error) {
+                    console.error('Erro:', error);
+                    showMessage('Erro ao excluir arquivo: ' + error.message, true);
+                }
             }
             
             // Upload de arquivos
-            uploadButton.addEventListener('click', function() {
+            uploadButton.addEventListener('click', async function() {
                 const files = fileInput.files;
                 
                 if (files.length === 0) {
@@ -355,65 +437,45 @@
                     return;
                 }
                 
-                // Simulando upload (em um sistema real, você enviaria para o servidor)
                 progressContainer.style.display = 'block';
                 progressBar.style.width = '0%';
                 progressBar.textContent = '0%';
                 
-                let progress = 0;
-                const totalFiles = files.length;
-                let uploadedFiles = 0;
-                
-                // Simulando progresso para cada arquivo
-                const interval = setInterval(() => {
-                    progress += 5;
-                    if (progress > 100) {
-                        progress = 100;
-                        clearInterval(interval);
+                try {
+                    // Enviar cada arquivo individualmente
+                    let uploadedCount = 0;
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const formData = new FormData();
+                        formData.append('file', file);
                         
-                        // Atualizar lista após upload
-                        setTimeout(() => {
-                            progressContainer.style.display = 'none';
-                            loadFileList();
-                            showMessage(`${totalFiles} arquivo(s) enviado(s) com sucesso!`);
-                            fileInput.value = ''; // Limpa a seleção de arquivos
-                        }, 500);
+                        const response = await fetch(`${API_BASE_URL}/upload`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Erro no upload do arquivo ${file.name}`);
+                        }
+                        
+                        uploadedCount++;
+                        const progress = Math.round((uploadedCount / files.length) * 100);
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.textContent = `${progress}%`;
                     }
                     
-                    progressBar.style.width = `${progress}%`;
-                    progressBar.textContent = `${progress}%`;
-                }, 100);
-                
-                // Em um sistema real, você usaria FormData e XMLHttpRequest/Fetch:
-                /*
-                const formData = new FormData();
-                for (let i = 0; i < files.length; i++) {
-                    formData.append('files[]', files[i]);
+                    showMessage(`${uploadedCount} arquivo(s) enviado(s) com sucesso!`);
+                    fileInput.value = '';
+                    loadFileList();
+                } catch (error) {
+                    console.error('Erro:', error);
+                    showMessage('Erro ao fazer upload: ' + error.message, true);
+                } finally {
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                    }, 1000);
                 }
-                
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/upload', true);
-                
-                xhr.upload.onprogress = function(e) {
-                    if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
-                        progressBar.style.width = `${percentComplete}%`;
-                        progressBar.textContent = `${Math.round(percentComplete)}%`;
-                    }
-                };
-                
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        showMessage('Upload concluído com sucesso!');
-                        loadFileList();
-                    } else {
-                        showMessage('Erro ao fazer upload.', true);
-                    }
-                    progressContainer.style.display = 'none';
-                };
-                
-                xhr.send(formData);
-                */
             });
             
             // Mostra apenas o formulário de login inicialmente
