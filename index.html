@@ -6,7 +6,213 @@
     <title>Meg Cloud - Gerenciador de Arquivos do Raspberry Pi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [Manter todos os estilos anteriores] */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #34495e;
+            border-bottom: 2px solid #e0e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #f8fafd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+        .file-item:hover {
+            background-color: #eef2f6;
+            transform: translateY(-2px);
+        }
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+            flex-grow: 1;
+            word-break: break-all;
+        }
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .file-actions button {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            color: white;
+        }
+        .file-actions button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .download-btn {
+            background-color: #3498db;
+        }
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .upload-btn {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .upload-btn:hover {
+            background-color: #27ae60;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .message-box.error {
+            background-color: #e74c3c;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .input-group input[type="file"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        #loginForm {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        #loginForm input[type="password"] {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 250px;
+            text-align: center;
+            font-size: 16px;
+        }
+        #loginForm button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        #loginForm button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+        #loginError {
+            color: #e74c3c;
+            font-weight: 500;
+            margin-top: 10px;
+            display: none;
+        }
+        #mainContent {
+            display: none;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #e0e7eb;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #3498db;
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.3s ease;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+        }
     </style>
 </head>
 <body>
@@ -59,8 +265,8 @@
             const progressContainer = document.getElementById('progressContainer');
             const progressBar = document.getElementById('progressBar');
             
-            // Configurações
-            const API_BASE_URL = 'http://' + window.location.hostname + ':5000'; // Ajuste conforme necessário
+            // Senha fixa
+            const CORRECT_PASSWORD = '956523332';
             
             // Função para mostrar mensagem
             function showMessage(message, isError = false) {
@@ -84,29 +290,15 @@
             }
             
             // Tentativa de login
-            loginButton.addEventListener('click', async function() {
+            loginButton.addEventListener('click', function() {
                 const enteredPassword = passwordInput.value.trim();
                 
-                try {
-                    const response = await fetch(`${API_BASE_URL}/login`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ password: enteredPassword })
-                    });
-                    
-                    if (response.ok) {
-                        // Login bem-sucedido
-                        toggleViews(false);
-                        loadFileList();
-                    } else {
-                        // Login falhou
-                        const data = await response.json();
-                        throw new Error(data.message || 'Erro no login');
-                    }
-                } catch (error) {
-                    console.error('Erro:', error);
+                if (enteredPassword === CORRECT_PASSWORD) {
+                    // Login bem-sucedido
+                    toggleViews(false);
+                    loadFileList();
+                } else {
+                    // Login falhou
                     loginError.style.display = 'block';
                     passwordInput.value = '';
                     passwordInput.focus();
@@ -119,111 +311,43 @@
                 }
             });
             
-            // Carregar lista de arquivos do Raspberry Pi
-            async function loadFileList() {
+            // Carregar lista de arquivos (simulação)
+            function loadFileList() {
                 fileList.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
                 
-                try {
-                    const response = await fetch(`${API_BASE_URL}/files`);
+                // Simulando requisição ao servidor
+                setTimeout(() => {
+                    // Aqui você faria uma requisição AJAX para obter a lista de arquivos
+                    // Exemplo de resposta simulada:
+                    const files = [
+                        { name: 'documento.pdf', size: '2.4 MB' },
+                        { name: 'imagem.jpg', size: '1.2 MB' },
+                        { name: 'planilha.xlsx', size: '3.7 MB' }
+                    ];
                     
-                    if (!response.ok) {
-                        throw new Error('Erro ao carregar arquivos');
-                    }
-                    
-                    const filenames = await response.json();
-                    
-                    if (filenames.length === 0) {
+                    if (files.length === 0) {
                         fileList.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
                         return;
                     }
-                    
-                    // Obter detalhes dos arquivos (tamanho)
-                    const files = await Promise.all(filenames.map(async filename => {
-                        const filepath = `${API_BASE_URL}/download/${filename}`;
-                        const sizeResponse = await fetch(filepath, { method: 'HEAD' });
-                        const size = sizeResponse.headers.get('content-length') || 0;
-                        return { name: filename, size: parseInt(size) };
-                    }));
                     
                     fileList.innerHTML = '';
                     files.forEach(file => {
                         const fileItem = document.createElement('div');
                         fileItem.className = 'file-item';
                         fileItem.innerHTML = `
-                            <div class="file-name">${file.name} <span class="text-gray-500 text-sm">(${formatFileSize(file.size)})</span></div>
+                            <div class="file-name">${file.name} <span class="text-gray-500 text-sm">(${file.size})</span></div>
                             <div class="file-actions">
-                                <button class="download-btn" data-filename="${file.name}">Download</button>
-                                <button class="delete-btn" data-filename="${file.name}">Excluir</button>
+                                <button class="download-btn">Download</button>
+                                <button class="delete-btn">Excluir</button>
                             </div>
                         `;
                         fileList.appendChild(fileItem);
                     });
-
-                    // Adiciona event listeners para os botões
-                    document.querySelectorAll('.download-btn').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            downloadFile(this.getAttribute('data-filename'));
-                        });
-                    });
-
-                    document.querySelectorAll('.delete-btn').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            deleteFile(this.getAttribute('data-filename'));
-                        });
-                    });
-
-                } catch (error) {
-                    console.error('Erro:', error);
-                    fileList.innerHTML = '<p class="text-red-500 text-center">Erro ao carregar lista de arquivos</p>';
-                    showMessage('Erro ao carregar arquivos: ' + error.message, true);
-                }
-            }
-            
-            // Função para formatar o tamanho do arquivo
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-            
-            // Função para baixar arquivo
-            async function downloadFile(filename) {
-                try {
-                    window.location.href = `${API_BASE_URL}/download/${encodeURIComponent(filename)}`;
-                    showMessage('Download iniciado!');
-                } catch (error) {
-                    console.error('Erro:', error);
-                    showMessage('Erro ao baixar arquivo: ' + error.message, true);
-                }
-            }
-            
-            // Função para deletar arquivo
-            async function deleteFile(filename) {
-                if (!confirm(`Tem certeza que deseja excluir "${filename}"?`)) {
-                    return;
-                }
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/delete/${encodeURIComponent(filename)}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Erro ao excluir arquivo');
-                    }
-                    
-                    showMessage('Arquivo excluído com sucesso!');
-                    loadFileList(); // Atualiza a lista
-                } catch (error) {
-                    console.error('Erro:', error);
-                    showMessage('Erro ao excluir arquivo: ' + error.message, true);
-                }
+                }, 1000);
             }
             
             // Upload de arquivos
-            uploadButton.addEventListener('click', async function() {
+            uploadButton.addEventListener('click', function() {
                 const files = fileInput.files;
                 
                 if (files.length === 0) {
@@ -231,45 +355,65 @@
                     return;
                 }
                 
+                // Simulando upload (em um sistema real, você enviaria para o servidor)
                 progressContainer.style.display = 'block';
                 progressBar.style.width = '0%';
                 progressBar.textContent = '0%';
                 
-                try {
-                    // Enviar cada arquivo individualmente
-                    let uploadedCount = 0;
-                    
-                    for (let i = 0; i < files.length; i++) {
-                        const file = files[i];
-                        const formData = new FormData();
-                        formData.append('file', file);
+                let progress = 0;
+                const totalFiles = files.length;
+                let uploadedFiles = 0;
+                
+                // Simulando progresso para cada arquivo
+                const interval = setInterval(() => {
+                    progress += 5;
+                    if (progress > 100) {
+                        progress = 100;
+                        clearInterval(interval);
                         
-                        const response = await fetch(`${API_BASE_URL}/upload`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`Erro no upload do arquivo ${file.name}`);
-                        }
-                        
-                        uploadedCount++;
-                        const progress = Math.round((uploadedCount / files.length) * 100);
-                        progressBar.style.width = `${progress}%`;
-                        progressBar.textContent = `${progress}%`;
+                        // Atualizar lista após upload
+                        setTimeout(() => {
+                            progressContainer.style.display = 'none';
+                            loadFileList();
+                            showMessage(`${totalFiles} arquivo(s) enviado(s) com sucesso!`);
+                            fileInput.value = ''; // Limpa a seleção de arquivos
+                        }, 500);
                     }
                     
-                    showMessage(`${uploadedCount} arquivo(s) enviado(s) com sucesso!`);
-                    fileInput.value = '';
-                    loadFileList();
-                } catch (error) {
-                    console.error('Erro:', error);
-                    showMessage('Erro ao fazer upload: ' + error.message, true);
-                } finally {
-                    setTimeout(() => {
-                        progressContainer.style.display = 'none';
-                    }, 1000);
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${progress}%`;
+                }, 100);
+                
+                // Em um sistema real, você usaria FormData e XMLHttpRequest/Fetch:
+                /*
+                const formData = new FormData();
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files[]', files[i]);
                 }
+                
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+                
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = `${percentComplete}%`;
+                        progressBar.textContent = `${Math.round(percentComplete)}%`;
+                    }
+                };
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        showMessage('Upload concluído com sucesso!');
+                        loadFileList();
+                    } else {
+                        showMessage('Erro ao fazer upload.', true);
+                    }
+                    progressContainer.style.display = 'none';
+                };
+                
+                xhr.send(formData);
+                */
             });
             
             // Mostra apenas o formulário de login inicialmente
