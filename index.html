@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meg Cloud - Gerenciador de Arquivos do Raspberry Pi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Cor de fundo suave */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #34495e;
+            border-bottom: 2px solid #e0e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #f8fafd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s ease;
+        }
+        .file-item:hover {
+            background-color: #eef2f6;
+        }
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+            flex-grow: 1;
+        }
+        .file-actions button {
+            margin-left: 10px;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .file-actions button:hover {
+            transform: translateY(-1px);
+        }
+        .download-btn {
+            background-color: #3498db;
+            color: white;
+        }
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .upload-btn {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .upload-btn:hover {
+            background-color: #27ae60;
+            transform: translateY(-1px);
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .input-group input[type="file"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>☁️ Meg Cloud</h1>
+            <p class="text-gray-600">Armazene e acesse seus arquivos diretamente no seu Pi!</p>
+        </div>
+
+        <div class="upload-section">
+            <h2 class="section-title">Fazer Upload de Arquivo</h2>
+            <div class="input-group">
+                <input type="file" id="fileInput" class="rounded-md border border-gray-300 p-2">
+                <button id="uploadButton" class="upload-btn">Upload</button>
+            </div>
+        </div>
+
+        <div class="file-list-section">
+            <h2 class="section-title">Meus Arquivos</h2>
+            <div id="fileList" class="space-y-3">
+                <p class="text-gray-500 text-center" id="loadingMessage">Carregando arquivos...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box"></div>
+
+    <script>
+        // ATENÇÃO: Substitua esta URL pelo endereço IP ou nome de host do seu Raspberry Pi
+        // e a porta onde seu servidor Flask estará rodando.
+        // Exemplo: http://192.168.1.100:5000
+        const API_BASE_URL = 'http://localhost:5000'; // Altere para o IP do seu Pi e porta do Flask
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileListDiv = document.getElementById('fileList');
+        const messageBox = document.getElementById('messageBox');
+        const loadingMessage = document.getElementById('loadingMessage');
+
+        // Função para exibir mensagens ao usuário
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = `message-box show bg-${type === 'success' ? 'green' : 'red'}-500`;
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+
+        // Função para listar arquivos
+        async function listFiles() {
+            loadingMessage.style.display = 'block'; // Mostra a mensagem de carregamento
+            fileListDiv.innerHTML = ''; // Limpa a lista antes de carregar
+            try {
+                const response = await fetch(`${API_BASE_URL}/files`);
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                const files = await response.json();
+
+                if (files.length === 0) {
+                    fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
+                } else {
+                    files.forEach(file => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.innerHTML = `
+                            <span class="file-name">${file}</span>
+                            <div class="file-actions">
+                                <button class="download-btn" data-filename="${file}">Download</button>
+                                <button class="delete-btn" data-filename="${file}">Excluir</button>
+                            </div>
+                        `;
+                        fileListDiv.appendChild(fileItem);
+                    });
+
+                    // Adiciona listeners para os botões de download e exclusão
+                    document.querySelectorAll('.download-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const filename = e.target.dataset.filename;
+                            window.location.href = `${API_BASE_URL}/download/${filename}`;
+                        });
+                    });
+
+                    document.querySelectorAll('.delete-btn').forEach(button => {
+                        button.addEventListener('click', async (e) => {
+                            const filename = e.target.dataset.filename;
+                            if (confirm(`Tem certeza que deseja excluir "${filename}"?`)) { // Usando confirm para simplicidade, mas um modal customizado é melhor
+                                try {
+                                    const response = await fetch(`${API_BASE_URL}/delete/${filename}`, {
+                                        method: 'DELETE'
+                                    });
+                                    if (!response.ok) {
+                                        throw new Error(`Erro HTTP: ${response.status}`);
+                                    }
+                                    const result = await response.json();
+                                    showMessage(result.message);
+                                    listFiles(); // Atualiza a lista após a exclusão
+                                } catch (error) {
+                                    console.error('Erro ao excluir arquivo:', error);
+                                    showMessage(`Erro ao excluir arquivo: ${error.message}`, 'error');
+                                }
+                            }
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao listar arquivos:', error);
+                fileListDiv.innerHTML = `<p class="text-red-500 text-center">Erro ao carregar arquivos: ${error.message}. Verifique se o servidor está rodando no Raspberry Pi.</p>`;
+            } finally {
+                loadingMessage.style.display = 'none'; // Esconde a mensagem de carregamento
+            }
+        }
+
+        // Função para fazer upload de arquivo
+        uploadButton.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage('Por favor, selecione um arquivo para upload.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message);
+                fileInput.value = ''; // Limpa o input do arquivo
+                listFiles(); // Atualiza a lista após o upload
+            } catch (error) {
+                console.error('Erro ao fazer upload:', error);
+                showMessage(`Erro ao fazer upload: ${error.message}`, 'error');
+            }
+        });
+
+        // Carrega os arquivos quando a página é carregada
+        window.onload = listFiles;
+    </script>
+</body>
+</html>
