@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meg Cloud - Gerenciador de Arquivos do Raspberry Pi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Cor de fundo suave */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #34495e;
+            border-bottom: 2px solid #e0e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .file-item {
+            display: flex;
+            flex-direction: column; /* Alterado para coluna para tags */
+            justify-content: space-between;
+            align-items: flex-start; /* Alinha itens ao início */
+            padding: 12px 15px;
+            background-color: #f8fafd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s ease;
+        }
+        .file-item:hover {
+            background-color: #eef2f6;
+        }
+        .file-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%; /* Ocupa toda a largura */
+            margin-bottom: 8px; /* Espaço entre nome e tags */
+        }
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+            flex-grow: 1;
+        }
+        .ai-tags {
+            font-size: 0.85rem;
+            color: #607d8b;
+            background-color: #e0f2f7;
+            padding: 4px 8px;
+            border-radius: 5px;
+            margin-top: 5px; /* Espaço entre o nome do arquivo e as tags */
+            width: 100%; /* Ocupa toda a largura */
+            word-wrap: break-word; /* Quebra texto longo */
+        }
+        .file-actions button {
+            margin-left: 10px;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .file-actions button:hover {
+            transform: translateY(-1px);
+        }
+        .download-btn {
+            background-color: #3498db;
+            color: white;
+        }
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .upload-btn {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .upload-btn:hover {
+            background-color: #27ae60;
+            transform: translateY(-1px);
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .input-group input[type="file"],
+        .input-group input[type="text"] { /* Adicionado estilo para input de texto */
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        /* Estilos para o formulário de login */
+        #loginForm {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        #loginForm input[type="password"] {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 250px;
+            text-align: center;
+        }
+        #loginForm button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        #loginForm button:hover {
+            background-color: #2980b9;
+        }
+        #loginError {
+            color: #e74c3c;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+        /* Esconde o conteúdo principal por padrão */
+        #mainContent {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginForm" class="container">
+        <h1 class="text-3xl font-bold text-gray-800">Meg Cloud - Acesso</h1>
+        <p class="text-gray-600">Por favor, insira a senha para continuar.</p>
+        <input type="password" id="passwordInput" placeholder="Senha">
+        <button id="loginButton">Entrar</button>
+        <p id="loginError" class="hidden">Senha incorreta. Tente novamente.</p>
+    </div>
+
+    <div id="mainContent" class="container">
+        <div class="header">
+            <h1>☁️ Meg Cloud</h1>
+            <p class="text-gray-600">armazene e acesse arquivos em um unico site!</p>
+        </div>
+
+        <div class="upload-section">
+            <h2 class="section-title">Fazer Upload de Arquivo</h2>
+            <div class="input-group">
+                <input type="file" id="fileInput" class="rounded-md border border-gray-300 p-2">
+                <button id="uploadButton" class="upload-btn">Upload</button>
+            </div>
+        </div>
+
+        <!-- Nova seção para a barra de pesquisa -->
+        <div class="search-section">
+            <h2 class="section-title">Pesquisar Arquivos</h2>
+            <div class="input-group">
+                <input type="text" id="searchInput" placeholder="Pesquisar por nome ou tags de IA..." class="rounded-md border border-gray-300 p-2">
+                <button id="searchButton" class="upload-btn">Pesquisar</button>
+            </div>
+        </div>
+
+        <div class="file-list-section">
+            <h2 class="section-title">Meus Arquivos</h2>
+            <div id="fileList" class="space-y-3">
+                <p class="text-gray-500 text-center">Carregando arquivos...</p>
+            </div>
+        </div>
+
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script>
+        // ATENÇÃO: SUBSTITUA ESTE IP PELO IP DO SEU RASPBERRY PI
+        // Se estiver a usar o Vercel, este IP deve ser o IP PÚBLICO do seu Pi,
+        // e o seu router deve ter o Port Forwarding configurado para a porta 5000.
+        const API_BASE_URL = 'http://192.168.68.108:5000'; // Exemplo: 'http://192.168.1.100:5000'
+
+        // --- Configurações de Autenticação (SENHA HARDCODED NO FRONT-END) ---
+        // ATENÇÃO: Esta senha está visível no código-fonte da página.
+        // NÃO USE para segurança real em produção ou se a página for acessível publicamente.
+        // É apenas para uso em rede local muito controlada ou para fins de teste.
+        const CORRECT_PASSWORD = '956523332'; // <-- Senha atualizada para 956523332
+
+        // Lista de arquivos a serem excluídos da exibição
+        const hiddenFiles = [
+            'venv_megcloud',
+            '.git',
+            'UPLOAD_FOLDER',
+            'app.py',
+            '__pycache__',
+            'app.py.save',
+            'Pendrive',
+            'image_metadata.json' // Adicionado para esconder o arquivo de metadados
+        ];
+
+        const loginForm = document.getElementById('loginForm');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginButton = document.getElementById('loginButton');
+        const loginError = document.getElementById('loginError');
+        const mainContent = document.getElementById('mainContent');
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileListDiv = document.getElementById('fileList');
+        const messageBox = document.getElementById('messageBox');
+
+        // Elementos da nova barra de pesquisa
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+
+        // Função para exibir mensagens ao usuário
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            if (type === 'success') {
+                messageBox.style.backgroundColor = '#4CAF50'; // Verde
+            } else if (type === 'error') {
+                messageBox.style.backgroundColor = '#e74c3c'; // Vermelho
+            }
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Mensagem desaparece após 3 segundos
+        }
+
+        // Função para verificar a senha (apenas no front-end)
+        loginButton.addEventListener('click', () => {
+            const enteredPassword = passwordInput.value;
+            if (enteredPassword === CORRECT_PASSWORD) {
+                loginForm.style.display = 'none'; // Esconde o formulário de login
+                mainContent.style.display = 'flex'; // Mostra o conteúdo principal
+                fetchFiles(); // Carrega os arquivos após o login
+            } else {
+                loginError.classList.remove('hidden'); // Mostra a mensagem de erro
+                passwordInput.value = ''; // Limpa o campo da senha
+            }
+        });
+
+        // Permite pressionar Enter para logar
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginButton.click();
+            }
+        });
+
+        // Event listener para o botão de pesquisa
+        searchButton.addEventListener('click', fetchFiles); // Re-fetch files com o termo de pesquisa
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchFiles(); // Re-fetch files com o termo de pesquisa ao pressionar Enter
+            }
+        });
+
+        // Função para buscar e exibir a lista de arquivos
+        async function fetchFiles() {
+            fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
+            try {
+                const response = await fetch(`${API_BASE_URL}/files`);
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                const files = await response.json();
+
+                fileListDiv.innerHTML = ''; // Limpa a lista existente
+
+                const searchTerm = searchInput.value.toLowerCase(); // Termo de pesquisa em minúsculas
+
+                const filteredFiles = files.filter(file => {
+                    // Verifica se o arquivo está na lista de arquivos ocultos
+                    if (hiddenFiles.includes(file.name)) {
+                        return false;
+                    }
+
+                    // Se não houver termo de pesquisa, inclui todos os arquivos visíveis
+                    if (!searchTerm) {
+                        return true;
+                    }
+
+                    // Lógica de pesquisa: busca no nome do arquivo ou nas tags de IA
+                    const fileNameMatches = file.name.toLowerCase().includes(searchTerm);
+                    const aiTagsMatches = file.ai_tags && file.ai_tags.toLowerCase().includes(searchTerm);
+
+                    return fileNameMatches || aiTagsMatches;
+                });
+
+
+                if (filteredFiles.length === 0) {
+                    fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado que corresponda à sua pesquisa.</p>';
+                    return;
+                }
+
+                filteredFiles.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    
+                    let aiTagsHtml = '';
+                    if (file.type === 'file' && file.ai_tags && file.ai_tags !== 'N/A') {
+                        aiTagsHtml = `<div class="ai-tags">Tags IA: ${file.ai_tags}</div>`;
+                    } else if (file.type === 'file' && file.ai_tags === 'N/A') {
+                         aiTagsHtml = `<div class="ai-tags">Tags IA: Não aplicável (não é imagem ou análise pendente)</div>`;
+                    } else if (file.type === 'directory') {
+                        aiTagsHtml = `<div class="ai-tags">Tags IA: Não aplicável (é um diretório)</div>`;
+                    }
+
+
+                    fileItem.innerHTML = `
+                        <div class="file-info">
+                            <span class="file-name">${file.name}</span>
+                            <div class="file-actions">
+                                <button class="download-btn" data-filename="${file.name}">Download</button>
+                                <button class="delete-btn" data-filename="${file.name}">Excluir</button>
+                            </div>
+                        </div>
+                        ${aiTagsHtml}
+                    `;
+                    fileListDiv.appendChild(fileItem);
+                });
+
+                // Adiciona event listeners para os botões de download e exclusão
+                document.querySelectorAll('.download-btn').forEach(button => {
+                    button.addEventListener('click', (e) => downloadFile(e.target.dataset.filename));
+                });
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteFile(e.target.dataset.filename));
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar arquivos:', error);
+                fileListDiv.innerHTML = `<p class="text-red-500 text-center">Erro ao carregar arquivos: ${error.message}. Verifique se o servidor está rodando no Raspberry Pi e o API_BASE_URL está correto.</p>`;
+                showMessage(`Erro ao carregar arquivos: ${error.message}`, 'error');
+            }
+        }
+
+        // Função para fazer upload de arquivo
+        uploadButton.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage('Por favor, selecione um arquivo para upload.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message);
+                fileInput.value = ''; // Limpa o input do arquivo
+                fetchFiles(); // Atualiza a lista de arquivos
+            } catch (error) {
+                console.error('Erro ao fazer upload:', error);
+                showMessage(`Erro ao fazer upload: ${error.message}`, 'error');
+            }
+        });
+
+        // Função para baixar arquivo
+        async function downloadFile(filename) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/download/${filename}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                // Cria um URL para o blob e simula um clique para download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename; // Define o nome do arquivo para download
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url); // Libera o URL do objeto
+                showMessage(`Download de "${filename}" iniciado.`);
+            } catch (error) {
+                console.error('Erro ao baixar arquivo:', error);
+                showMessage(`Erro ao baixar arquivo: ${error.message}`, 'error');
+            }
+        }
+
+        // Função para excluir arquivo
+        async function deleteFile(filename) {
+            // Substitui o confirm() nativo por uma função que simula um modal
+            showCustomConfirm(`Tem certeza que deseja excluir "${filename}"?`, async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/delete/${filename}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                    }
+
+                    const result = await response.json();
+                    showMessage(result.message, 'success');
+                    fetchFiles(); // Atualiza a lista de arquivos
+                } catch (error) {
+                    console.error('Erro ao excluir arquivo:', error);
+                    showMessage(`Erro ao excluir arquivo: ${error.message}`, 'error');
+                }
+            });
+        }
+
+        // Função para simular um modal de confirmação (substituindo confirm())
+        function showCustomConfirm(message, onConfirm) {
+            const confirmModal = document.createElement('div');
+            confirmModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1001;
+            `;
+            confirmModal.innerHTML = `
+                <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+                    <p class="text-lg font-semibold mb-6">${message}</p>
+                    <button id="confirmYes" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md mr-4">Sim</button>
+                    <button id="confirmNo" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Não</button>
+                </div>
+            `;
+            document.body.appendChild(confirmModal);
+
+            document.getElementById('confirmYes').onclick = () => {
+                onConfirm();
+                document.body.removeChild(confirmModal);
+            };
+            document.getElementById('confirmNo').onclick = () => {
+                document.body.removeChild(confirmModal);
+            };
+        }
+
+        // Não carrega os arquivos automaticamente ao carregar a página; espera o login.
+        // document.addEventListener('DOMContentLoaded', fetchFiles);
+    </script>
+</body>
+</html>
