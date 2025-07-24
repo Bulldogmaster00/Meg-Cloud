@@ -1,256 +1,406 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Among Us - Conectar Fios</title>
+    <title>Meg Cloud - Gerenciador de Arquivos do Raspberry Pi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #1a1a2e;
-            color: white;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        h1 {
-            color: #ff5555;
-        }
-        
-        .task-container {
-            background-color: #2a2a3e;
-            border-radius: 10px;
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-        }
-        
-        .wires-container {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Cor de fundo suave */
             display: flex;
-            justify-content: space-around;
-            margin: 30px 0;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
         }
-        
-        .wire-column {
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
             display: flex;
             flex-direction: column;
+            gap: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #34495e;
+            border-bottom: 2px solid #e0e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #f8fafd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s ease;
+        }
+        .file-item:hover {
+            background-color: #eef2f6;
+        }
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+            flex-grow: 1;
+        }
+        .file-actions button {
+            margin-left: 10px;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .file-actions button:hover {
+            transform: translateY(-1px);
+        }
+        .download-btn {
+            background-color: #3498db;
+            color: white;
+        }
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .upload-btn {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .upload-btn:hover {
+            background-color: #27ae60;
+            transform: translateY(-1px);
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
             align-items: center;
         }
-        
-        .wire-end {
-            width: 60px;
-            height: 30px;
-            border-radius: 5px;
-            margin: 10px 0;
-            cursor: pointer;
-            transition: transform 0.2s;
+        .input-group input[type="file"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
         }
-        
-        .wire-end:hover {
-            transform: scale(1.1);
+        /* Estilos para o formulário de login */
+        #loginForm {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
         }
-        
-        .wire-line {
-            height: 100px;
-            width: 8px;
-            margin: 5px 0;
-            visibility: hidden;
+        #loginForm input[type="password"] {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 250px;
+            text-align: center;
         }
-        
-        .connected {
-            visibility: visible !important;
-        }
-        
-        .red { background-color: #ff5555; }
-        .blue { background-color: #5555ff; }
-        .green { background-color: #55ff55; }
-        .yellow { background-color: #ffff55; }
-        
-        .task-complete {
-            display: none;
-            margin-top: 20px;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        button {
-            background-color: #ff5555;
+        #loginForm button {
+            background-color: #3498db;
             color: white;
-            border: none;
             padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 16px;
-            margin-top: 20px;
-            transition: background-color 0.3s;
+            transition: background-color 0.2s ease;
         }
-        
-        button:hover {
-            background-color: #ff3333;
+        #loginForm button:hover {
+            background-color: #2980b9;
         }
-        
-        .screenshot {
-            margin-top: 20px;
-            border: 3px solid #ff5555;
-            border-radius: 10px;
+        #loginError {
+            color: #e74c3c;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+        /* Esconde o conteúdo principal por padrão */
+        #mainContent {
             display: none;
         }
     </style>
 </head>
 <body>
-    <div class="task-container" id="taskContainer">
-        <h1>TASK: CONECTAR FIOS</h1>
-        <p>Conecte cada fio à extremidade da mesma cor</p>
-        
-        <div class="wires-container">
-            <div class="wire-column">
-                <div class="wire-end red" data-color="red" onclick="selectWire(this)"></div>
-                <div class="wire-line red" id="line1"></div>
-                <div class="wire-end blue" data-color="blue" onclick="selectWire(this)"></div>
-                <div class="wire-line blue" id="line2"></div>
-            </div>
-            
-            <div class="wire-column">
-                <div class="wire-end green" data-color="green" onclick="selectWire(this)"></div>
-                <div class="wire-line green" id="line3"></div>
-                <div class="wire-end yellow" data-color="yellow" onclick="selectWire(this)"></div>
-                <div class="wire-line yellow" id="line4"></div>
-            </div>
-        </div>
-        
-        <div class="task-complete" id="taskComplete">
-            <h2>TASK COMPLETA!</h2>
-            <p>Parabéns! Você completou a tarefa.</p>
-            <button onclick="generateProof()">Gerar Comprovante</button>
-        </div>
+    <div id="loginForm" class="container">
+        <h1 class="text-3xl font-bold text-gray-800">Meg Cloud - Acesso</h1>
+        <p class="text-gray-600">Por favor, insira a senha para continuar.</p>
+        <input type="password" id="passwordInput" placeholder="Senha">
+        <button id="loginButton">Entrar</button>
+        <p id="loginError" class="hidden">Senha incorreta. Tente novamente.</p>
     </div>
-    
-    <div id="proofContainer" style="display: none;">
-        <div class="task-container">
-            <h1>COMPROVANTE DE TASK</h1>
-            <p>O jogador completou a task "Conectar Fios" com sucesso.</p>
-            <p>Data: <span id="proofDate"></span></p>
-            <p>Código de verificação: <strong id="verificationCode"></strong></p>
-            <div class="wires-container">
-                <div class="wire-column">
-                    <div class="wire-end red"></div>
-                    <div class="wire-line red connected"></div>
-                    <div class="wire-end blue"></div>
-                    <div class="wire-line blue connected"></div>
-                </div>
-                <div class="wire-column">
-                    <div class="wire-end green"></div>
-                    <div class="wire-line green connected"></div>
-                    <div class="wire-end yellow"></div>
-                    <div class="wire-line yellow connected"></div>
-                </div>
-            </div>
-            <p>Among Us Task Proof</p>
+
+    <div id="mainContent" class="container">
+        <div class="header">
+            <h1>☁️ Meg Cloud</h1>
+            <p class="text-gray-600">armazene e acesse arquivos em um unico site!</p>
         </div>
-        <button onclick="saveProof()">Salvar Comprovante</button>
+
+        <div class="upload-section">
+            <h2 class="section-title">Fazer Upload de Arquivo</h2>
+            <div class="input-group">
+                <input type="file" id="fileInput" class="rounded-md border border-gray-300 p-2">
+                <button id="uploadButton" class="upload-btn">Upload</button>
+            </div>
+        </div>
+
+        <div class="file-list-section">
+            <h2 class="section-title">Meus Arquivos</h2>
+            <div id="fileList" class="space-y-3">
+                <p class="text-gray-500 text-center">Carregando arquivos...</p>
+            </div>
+        </div>
+
+        <div id="messageBox" class="message-box"></div>
     </div>
-    
-    <canvas id="canvas" style="display: none;"></canvas>
-    
+
     <script>
-        let selectedWire = null;
-        let connectedPairs = 0;
-        const totalPairs = 4;
-        
-        function selectWire(wire) {
-            if (selectedWire === null) {
-                selectedWire = wire;
-                wire.style.transform = 'scale(1.2)';
+        // ATENÇÃO: SUBSTITUA ESTE IP PELO IP DO SEU RASPBERRY PI
+        // Se estiver a usar o Vercel, este IP deve ser o IP PÚBLICO do seu Pi,
+        // e o seu router deve ter o Port Forwarding configurado para a porta 5000.
+        const API_BASE_URL = 'http://192.168.68.108:5000'; // Exemplo: 'http://192.168.1.100:5000'
+
+        // --- Configurações de Autenticação (SENHA HARDCODED NO FRONT-END) ---
+        // ATENÇÃO: Esta senha está visível no código-fonte da página.
+        // NÃO USE para segurança real em produção ou se a página for acessível publicamente.
+        // É apenas para uso em rede local muito controlada ou para fins de teste.
+        const CORRECT_PASSWORD = '956523332'; // <-- Senha atualizada para 956523332
+
+        // Lista de arquivos a serem excluídos da exibição
+        const hiddenFiles = [
+            'venv_megcloud',
+            '.git',
+            'UPLOAD_FOLDER', // Se UPLOAD_FOLDER for um diretório e você não quiser vê-lo
+            'app.py',
+            '__pycache__',
+            'app.py.save',
+            'Pendrive' // Se 'Pendrive' for um arquivo/diretório que aparece na listagem
+        ];
+
+        const loginForm = document.getElementById('loginForm');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginButton = document.getElementById('loginButton');
+        const loginError = document.getElementById('loginError');
+        const mainContent = document.getElementById('mainContent');
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileListDiv = document.getElementById('fileList');
+        const messageBox = document.getElementById('messageBox');
+
+        // Função para exibir mensagens ao usuário
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            if (type === 'success') {
+                messageBox.style.backgroundColor = '#4CAF50'; // Verde
+            } else if (type === 'error') {
+                messageBox.style.backgroundColor = '#e74c3c'; // Vermelho
+            }
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Mensagem desaparece após 3 segundos
+        }
+
+        // Função para verificar a senha (apenas no front-end)
+        loginButton.addEventListener('click', () => {
+            const enteredPassword = passwordInput.value;
+            if (enteredPassword === CORRECT_PASSWORD) {
+                loginForm.style.display = 'none'; // Esconde o formulário de login
+                mainContent.style.display = 'flex'; // Mostra o conteúdo principal
+                fetchFiles(); // Carrega os arquivos após o login
             } else {
-                if (selectedWire.dataset.color === wire.dataset.color && selectedWire !== wire) {
-                    // Conexão correta
-                    const lineId = selectedWire.parentElement === wire.parentElement ? 
-                                  (selectedWire.nextElementSibling === wire.previousElementSibling ? 
-                                   selectedWire.nextElementSibling.id : wire.nextElementSibling.id) :
-                                  document.querySelector(`#line${selectedWire.dataset.color === 'red' ? 1 : 
-                                                       selectedWire.dataset.color === 'blue' ? 2 : 
-                                                       selectedWire.dataset.color === 'green' ? 3 : 4}`);
-                    
-                    lineId.classList.add('connected');
-                    connectedPairs++;
-                    
-                    selectedWire.style.transform = 'scale(1)';
-                    selectedWire.onclick = null;
-                    wire.onclick = null;
-                    selectedWire = null;
-                    
-                    if (connectedPairs === totalPairs) {
-                        setTimeout(() => {
-                            document.getElementById('taskComplete').style.display = 'block';
-                        }, 500);
-                    }
-                } else {
-                    // Conexão incorreta
-                    selectedWire.style.transform = 'scale(1)';
-                    selectedWire = null;
-                    alert('Cores não correspondem! Tente novamente.');
+                loginError.classList.remove('hidden'); // Mostra a mensagem de erro
+                passwordInput.value = ''; // Limpa o campo da senha
+            }
+        });
+
+        // Permite pressionar Enter para logar
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginButton.click();
+            }
+        });
+
+        // Função para buscar e exibir a lista de arquivos
+        async function fetchFiles() {
+            fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Carregando arquivos...</p>';
+            try {
+                const response = await fetch(`${API_BASE_URL}/files`);
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
                 }
+                const files = await response.json();
+
+                fileListDiv.innerHTML = ''; // Limpa a lista existente
+
+                if (files.length === 0) {
+                    fileListDiv.innerHTML = '<p class="text-gray-500 text-center">Nenhum arquivo encontrado.</p>';
+                    return;
+                }
+
+                files.forEach(file => {
+                    // Verifica se o arquivo está na lista de arquivos ocultos
+                    if (!hiddenFiles.includes(file)) {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.innerHTML = `
+                            <span class="file-name">${file}</span>
+                            <div class="file-actions">
+                                <button class="download-btn" data-filename="${file}">Download</button>
+                                <button class="delete-btn" data-filename="${file}">Excluir</button>
+                            </div>
+                        `;
+                        fileListDiv.appendChild(fileItem);
+                    }
+                });
+
+                // Adiciona event listeners para os botões de download e exclusão
+                document.querySelectorAll('.download-btn').forEach(button => {
+                    button.addEventListener('click', (e) => downloadFile(e.target.dataset.filename));
+                });
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteFile(e.target.dataset.filename));
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar arquivos:', error);
+                fileListDiv.innerHTML = `<p class="text-red-500 text-center">Erro ao carregar arquivos: ${error.message}. Verifique se o servidor está rodando no Raspberry Pi e o API_BASE_URL está correto.</p>`;
+                showMessage(`Erro ao carregar arquivos: ${error.message}`, 'error');
             }
         }
-        
-        function generateProof() {
-            const proofContainer = document.getElementById('proofContainer');
-            const dateSpan = document.getElementById('proofDate');
-            const codeSpan = document.getElementById('verificationCode');
-            
-            const now = new Date();
-            dateSpan.textContent = now.toLocaleString();
-            
-            // Gerar um código aleatório de 6 dígitos
-            const code = Math.floor(100000 + Math.random() * 900000);
-            codeSpan.textContent = code;
-            
-            document.getElementById('taskContainer').style.display = 'none';
-            proofContainer.style.display = 'block';
+
+        // Função para fazer upload de arquivo
+        uploadButton.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage('Por favor, selecione um arquivo para upload.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message);
+                fileInput.value = ''; // Limpa o input do arquivo
+                fetchFiles(); // Atualiza a lista de arquivos
+            } catch (error) {
+                console.error('Erro ao fazer upload:', error);
+                showMessage(`Erro ao fazer upload: ${error.message}`, 'error');
+            }
+        });
+
+        // Função para baixar arquivo
+        async function downloadFile(filename) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/download/${filename}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                // Cria um URL para o blob e simula um clique para download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename; // Define o nome do arquivo para download
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url); // Libera o URL do objeto
+                showMessage(`Download de "${filename}" iniciado.`);
+            } catch (error) {
+                console.error('Erro ao baixar arquivo:', error);
+                showMessage(`Erro ao baixar arquivo: ${error.message}`, 'error');
+            }
         }
-        
-        function saveProof() {
-            const proofContainer = document.getElementById('proofContainer');
-            const canvas = document.getElementById('canvas');
-            
-            // Configurar o canvas com as dimensões do proofContainer
-            canvas.width = proofContainer.offsetWidth;
-            canvas.height = proofContainer.offsetHeight + 50; // Espaço para o botão
-            
-            const ctx = canvas.getContext('2d');
-            
-            // Desenhar o fundo
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Desenhar o conteúdo do proofContainer
-            ctx.fillStyle = '#2a2a3e';
-            ctx.roundRect(20, 20, proofContainer.offsetWidth - 40, proofContainer.offsetHeight - 40, 10);
-            ctx.fill();
-            
-            // Adicionar o texto e elementos
-            html2canvas(proofContainer).then(canvasProof => {
-                ctx.drawImage(canvasProof, 0, 0);
-                
-                // Criar link para download
-                const link = document.createElement('a');
-                link.download = 'comprovante-task-amongus.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
+
+        // Função para excluir arquivo
+        async function deleteFile(filename) {
+            if (!confirm(`Tem certeza que deseja excluir "${filename}"?`)) {
+                return; // Usuário cancelou
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/delete/${filename}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message, 'success');
+                fetchFiles(); // Atualiza a lista de arquivos
+            } catch (error) {
+                console.error('Erro ao excluir arquivo:', error);
+                showMessage(`Erro ao excluir arquivo: ${error.message}`, 'error');
+            }
         }
-        
-        // Carregar html2canvas dinamicamente
-        const script = document.createElement('script');
-        script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-        document.head.appendChild(script);
+
+        // Não carrega os arquivos automaticamente ao carregar a página; espera o login.
+        // document.addEventListener('DOMContentLoaded', fetchFiles);
     </script>
 </body>
 </html>
